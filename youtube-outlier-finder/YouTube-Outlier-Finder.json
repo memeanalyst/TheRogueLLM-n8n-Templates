@@ -62,7 +62,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=This video got {{ $json.ratio }}x its channel's normal views (views / median of the channel's recent long-form uploads).\n\nChannel: {{ $json.channel }}\nOutlier: \"{{ $json.title }}\" ({{ $json.views }} views, channel normal {{ $json.channel_median }})\nTheir other recent titles: {{ $json.other_titles.join(' | ') }}\n\n1. In 1-2 sentences, why this title/topic likely popped compared with their other titles (a guess, say so).\n2. Give 3 video ideas for MY channel: [DESCRIBE YOUR CHANNEL HERE, e.g. AI tools and tutorials for people building apps with AI]. Each idea = a title + one line. Be concrete, no hype words. Only name tools and model versions that are current today; never suggest outdated versions."
+        "text": "=This video got {{ $json.ratio }}x its channel's normal views (views / median of the channel's recent long-form uploads).\n\nChannel: {{ $json.channel }}\nOutlier: \"{{ $json.title }}\" ({{ $json.views }} views, channel normal {{ $json.channel_median }})\nTheir other recent titles: {{ $json.other_titles.join(' | ') }}\n\n1. In 1-2 sentences, why this title/topic likely popped compared with their other titles (a guess, say so).\n2. Give 3 video ideas for MY channel: [DESCRIBE YOUR CHANNEL HERE, e.g. AI tools and tutorials for people building apps with AI]. Each idea = a title + one line. Be concrete, no hype words. Never write a model version number (no 'Claude 3.5', 'GPT-4o', etc.), because your training data may be out of date. Name products only."
       },
       "name": "Why it popped + 3 ideas",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
