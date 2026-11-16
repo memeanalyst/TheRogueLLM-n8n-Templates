@@ -1,0 +1,316 @@
+{
+  "name": "Slogan Trademark Checker — Etsy & Print-on-Demand Ban Shield",
+  "nodes": [
+    {
+      "id": "5128038e-fcee-4720-aab3-5c6741027ec9",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        240,
+        40
+      ],
+      "parameters": {
+        "content": "## Slogan Trademark Checker — Etsy & Print-on-Demand Ban Shield\n\nCheck your print-on-demand phrases against live US trademarks before you list them.\n\nPaste your t-shirt, mug and sticker slogans into a Google Sheet, one per row. This workflow checks each phrase against live USPTO trademark records with Magnova's USPTO Trademark Search Actor on Apify, and writes the result back into your sheet:\n\n- **RISK — live trademark match**: an identical live trademark exists in a print-on-demand class (clothing 025, housewares 021, paper goods 016, textiles 024). The owner's name and the trademark serial number are written back with the verdict.\n- **CHECK — similar live mark**: a live mark in those classes contains your phrase. Worth a closer look before you list.\n- **No live match found**: no exact or phrase-containing live mark in those classes.\n\n### How it works\n\n1. On a daily schedule (or whenever you run it manually), the workflow reads every slogan in your sheet that does not have a verdict yet.\n2. Each slogan is checked one at a time against the USPTO Trademark Search Actor, limited to LIVE marks only.\n3. A Code node compares the returned marks with your slogan: an exact match in a print-on-demand class is RISK, a phrase-containing mark is CHECK, anything else is \"No live match found\".\n4. The verdict, owner and serial number are written back into the same row of your sheet.\n\n### What it costs\n\nThe Actor charges $0.004 per trademark record returned, capped at 10 records per slogan — at most 4 cents a slogan, usually less — charged on your own Apify account.\n\n### What you need\n\n- A free Apify account and API token (the free tier is enough to start)\n- A Google account, and a sheet with the headers **Slogan | Verdict | Owner | Serial** in a tab named **Slogans**, one slogan per row\n\n### Important\n\nThis is a screening aid, not legal advice. Similar-sounding marks, other classes and unregistered trademarks can still cause takedowns. For a slogan that matters, have a trademark attorney review it.\n\nBy Magnova — pay-per-event Actors on clean public data. No logins, no CAPTCHA bypass."
+      }
+    },
+    {
+      "id": "00934d3c-8f19-4306-924a-6b2daa8eb082",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        840,
+        200
+      ],
+      "parameters": {
+        "content": "## Read unchecked slogans\n\nReads the rows of your Slogans sheet that do not have a verdict yet, then hands them to the loop one at a time.",
+        "color": 7
+      }
+    },
+    {
+      "id": "7282583d-7c0c-431f-bebe-80dd55570588",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        200
+      ],
+      "parameters": {
+        "content": "## Check each slogan\n\nRuns the USPTO Trademark Search Actor for the slogan (live marks only) and decides the verdict: RISK, CHECK, or No live match found.",
+        "color": 7
+      }
+    },
+    {
+      "id": "bbe26ebb-64d9-4e55-88dd-63c858e7a9f0",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1940,
+        200
+      ],
+      "parameters": {
+        "content": "## Write the verdict back\n\nWrites the verdict, owner and serial number into the same row the slogan came from, then the loop moves to the next slogan.",
+        "color": 7
+      }
+    },
+    {
+      "id": "10aeb88f-a229-4a71-8c91-cacd1282490d",
+      "name": "Every Morning at 9am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        340
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 9,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "f848c1b7-f147-495b-8ae2-fbd969a06d04",
+      "name": "Read Slogans from Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        340
+      ],
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultName": "Slogans"
+        },
+        "combineFilters": "AND",
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Verdict",
+              "lookupValue": ""
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "dad1d62f-3f8d-405a-885c-263c3e823586",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1330,
+        340
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "abb82a25-6488-4080-a893-ee95600f70d7",
+      "name": "Check Trademark on Apify",
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        340
+      ],
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor and get dataset",
+        "actorId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "I8KvtBliDeyVghVzU"
+        },
+        "customBody": "={{ JSON.stringify({ wordmark: $json.Slogan, status: 'live', maxResults: 10 }) }}",
+        "maxTotalChargeUsd": 0.1,
+        "timeout": 300
+      }
+    },
+    {
+      "id": "d567d2f7-3ab2-415b-84f9-eb1dec040c0b",
+      "name": "Decide Verdict",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1790,
+        340
+      ],
+      "parameters": {
+        "jsCode": "// Decide the verdict for ONE slogan from its USPTO trademark search results.\n// This node runs once for all items: its input items are the dataset records\n// the Apify actor returned for the slogan the Loop Over Items node is\n// currently processing. It always returns exactly one verdict item, even\n// when the actor returned no records at all.\nconst POD_CLASSES = ['IC 016', 'IC 021', 'IC 024', 'IC 025'];\n\nfunction normalize(text) {\n  return String(text ?? '')\n    .toLowerCase()\n    .trim()\n    .replace(/[.!?]+$/, '')\n    .trim();\n}\n\n// The slogan being checked, recovered from the loop item via item pairing.\n// The fallback covers the empty-result case, where there is no input item\n// to pair from.\nlet slogan = '';\ntry { slogan = $('Loop Over Items').item.json.Slogan ?? ''; } catch (e) { /* no paired item */ }\nif (!slogan) {\n  try { slogan = $('Loop Over Items').first().json.Slogan ?? ''; } catch (e) { /* ignore */ }\n}\nconst target = normalize(slogan);\n\nfunction inPodClass(item) {\n  const classes = item.json.internationalClasses;\n  return Array.isArray(classes) && classes.some((c) => POD_CLASSES.includes(c));\n}\n\nlet risk = null;\nlet check = null;\nfor (const item of $input.all()) {\n  const status = item.json.status;\n  if (status && status !== 'LIVE') continue;\n  if (!inPodClass(item)) continue;\n  const mark = normalize(item.json.wordmark);\n  if (!mark || !target) continue;\n  // Last match wins, on purpose: this mirrors the Make version of this\n  // template, whose write-order (default -> CHECK pass -> RISK pass) leaves\n  // the LAST matching record in the sheet. Keeping the same rule here means\n  // both templates report the same owner/serial for the same slogan\n  // (verified on \"Mama Bear\": several exact matches exist in POD classes;\n  // the last one is Amazon's, which is what the Make template writes back).\n  if (mark === target) { risk = item; continue; }\n  if (mark.includes(target) || target.includes(mark)) check = item;\n}\n\nif (risk) {\n  return [{ json: { slogan, verdict: 'RISK — live trademark match', owner: risk.json.owner ?? '', serial: String(risk.json.serialNumber ?? '') } }];\n}\nif (check) {\n  return [{ json: { slogan, verdict: 'CHECK — similar live mark', owner: check.json.owner ?? '', serial: String(check.json.serialNumber ?? '') } }];\n}\nreturn [{ json: { slogan, verdict: 'No live match found', owner: '', serial: '' } }];"
+      }
+    },
+    {
+      "id": "35ce1c13-5c76-471a-b816-2b463cea7f82",
+      "name": "Write Verdict to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.2,
+      "position": [
+        2020,
+        340
+      ],
+      "parameters": {
+        "resource": "sheet",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultName": "Slogans"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Slogan"
+          ],
+          "schema": [
+            {
+              "id": "Slogan",
+              "displayName": "Slogan",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Verdict",
+              "displayName": "Verdict",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Owner",
+              "displayName": "Owner",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Serial",
+              "displayName": "Serial",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            }
+          ],
+          "value": {
+            "Slogan": "={{ $json.slogan }}",
+            "Verdict": "={{ $json.verdict }}",
+            "Owner": "={{ $json.owner }}",
+            "Serial": "={{ $json.serial }}"
+          }
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Every Morning at 9am": {
+      "main": [
+        [
+          {
+            "node": "Read Slogans from Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Slogans from Sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Check Trademark on Apify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Trademark on Apify": {
+      "main": [
+        [
+          {
+            "node": "Decide Verdict",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide Verdict": {
+      "main": [
+        [
+          {
+            "node": "Write Verdict to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Verdict to Sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
