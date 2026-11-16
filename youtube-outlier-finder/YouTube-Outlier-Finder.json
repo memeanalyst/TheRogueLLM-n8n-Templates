@@ -3,6 +3,118 @@
   "nodes": [
     {
       "parameters": {
+        "content": "## YouTube Outlier Finder\n### How it works\nEvery Monday at 9am this workflow checks the YouTube channels you list, finds their long-form videos that far outperformed the channel's usual views, and sends you one Telegram message per outlier with an AI explanation of why it likely popped plus three video ideas for your own channel. Videos come from each channel's official RSS feed via the YouTube Channel Scraper actor on Apify, so results cover recent uploads only. Each video is scored against its own channel's median views; a video must beat the multiplier and the minimum-views floor in the config node to qualify. Outliers already sent are remembered, so the same video is never sent twice. On a quiet week with no new outliers, nothing is sent.\n### Setup\n1. In 'Set your channels & limits', list the channels to watch and describe your own channel.\n2. Connect your Apify account in 'Scrape channels on Apify' (runs are billed per video to your Apify account).\n3. Connect a Gemini API key in 'Chat model (Gemini)', or swap in another chat model.\n4. Put your Telegram chat ID in both Telegram nodes and connect your bot.\n### Customization\nRaise the multiplier for only the biggest breakouts, lower the view floor for small channels, change the Monday schedule, or edit the LLM prompt to match your niche.",
+        "width": 840,
+        "height": 320,
+        "color": 1
+      },
+      "name": "Sticky st1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -320
+      ],
+      "id": "st1"
+    },
+    {
+      "parameters": {
+        "content": "## 🎥 Watch the tutorial\n@[youtube](3CgDb_Ymtng)\nThe full build, step by step — how the finder works, how to set it up, and how to read the alerts.",
+        "width": 460,
+        "height": 320,
+        "color": 1
+      },
+      "name": "Sticky st2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        880,
+        -320
+      ],
+      "id": "st2"
+    },
+    {
+      "parameters": {
+        "content": "## ⚠️ Edit the Set node first\nThe workflow ships with placeholder channels. Until you replace them with real ones, it will find nothing.",
+        "width": 280,
+        "height": 150,
+        "color": 3
+      },
+      "name": "Sticky st3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        230,
+        20
+      ],
+      "id": "st3"
+    },
+    {
+      "parameters": {
+        "content": "## 1 · Start here — your settings\nEvery knob lives in the Set node: the channels to watch, the outlier multiplier, the minimum-views floor, how many recent videos per channel get scored, and a one-line description of your channel for the AI. Edit it before anything else.",
+        "width": 480,
+        "height": 320,
+        "color": 7
+      },
+      "name": "Sticky st4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        200
+      ],
+      "id": "st4"
+    },
+    {
+      "parameters": {
+        "content": "## 2 · Fetch recent videos\nThe Apify actor reads each channel's official YouTube RSS feed and returns its recent long-form uploads, Shorts excluded. One run covers every channel in your list. If the scrape itself fails, the side branch sends you a failure alert instead of staying silent.",
+        "width": 250,
+        "height": 320,
+        "color": 7
+      },
+      "name": "Sticky st5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        460,
+        200
+      ],
+      "id": "st5"
+    },
+    {
+      "parameters": {
+        "content": "## 3 · Score & dedupe\nEach video is compared with its own channel's median views. Only videos beating your multiplier and view floor pass, and any video already sent in an earlier week is dropped. No new outliers means the run ends here and the week stays silent.",
+        "width": 490,
+        "height": 320,
+        "color": 7
+      },
+      "name": "Sticky st6",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        700,
+        200
+      ],
+      "id": "st6"
+    },
+    {
+      "parameters": {
+        "content": "## 4 · Explain & alert\nThe LLM explains why each outlier likely popped and drafts three ideas for your channel. You get one Telegram message per outlier, with its views, ratio and link — never a combined digest.",
+        "width": 520,
+        "height": 320,
+        "color": 7
+      },
+      "name": "Sticky st7",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        200
+      ],
+      "id": "st7"
+    },
+    {
+      "parameters": {
         "rule": {
           "interval": [
             {
@@ -15,14 +127,61 @@
           ]
         }
       },
-      "name": "Every Monday 9am",
+      "name": "Run every Monday 9am",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
         0,
-        300
+        320
       ],
       "id": "n1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "channels",
+              "value": "@competitorone, @competitortwo",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "outlier_multiplier",
+              "value": 3,
+              "type": "number"
+            },
+            {
+              "id": "a3",
+              "name": "min_views",
+              "value": 1000,
+              "type": "number"
+            },
+            {
+              "id": "a4",
+              "name": "lookback_videos",
+              "value": 15,
+              "type": "number"
+            },
+            {
+              "id": "a5",
+              "name": "my_channel_description",
+              "value": "AI tools and tutorials for people building apps with AI",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set your channels & limits",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        320
+      ],
+      "id": "n2"
     },
     {
       "parameters": {
@@ -35,125 +194,202 @@
           "value": "5P5GEMKGqhtLfbQV5",
           "cachedResultName": "YouTube Channel Scraper"
         },
-        "customBody": "{\n  \"channels\": [\n    \"@YourCompetitor\",\n    \"UCxxxxxxxxxxxxxxxxxxxxxx\"\n  ],\n  \"excludeShorts\": true\n}"
+        "customBody": "={{ JSON.stringify({ channels: $('Set your channels & limits').first().json.channels.split(',').map(s => s.trim()).filter(Boolean), excludeShorts: true }) }}"
       },
-      "name": "YouTube Channel Scraper",
+      "name": "Scrape channels on Apify",
       "type": "@apify/n8n-nodes-apify.apify",
       "typeVersion": 2,
       "position": [
-        260,
-        300
+        480,
+        320
       ],
-      "id": "n2"
+      "id": "n3",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "jsCode": "// Group long-form videos by channel, score each against that channel's median\nconst byChannel = {};\nfor (const { json: v } of $input.all()) (byChannel[v.channelName] ??= []).push(v);\n\nconst outliers = [];\nfor (const [channel, videos] of Object.entries(byChannel)) {\n  const views = videos.map(v => v.viewCount).sort((a, b) => a - b);\n  const mid = Math.floor(views.length / 2);\n  const median = views.length % 2 ? views[mid] : (views[mid - 1] + views[mid]) / 2;\n  for (const v of videos) {\n    const ratio = v.viewCount / median;\n    if (ratio >= 3) outliers.push({ json: { channel, title: v.videoTitle, url: v.videoUrl, views: v.viewCount, channel_median: median, ratio: +ratio.toFixed(1), other_titles: videos.filter(o => o !== v).map(o => o.videoTitle).slice(0, 8) } });\n  }\n}\nreturn outliers.sort((a, b) => b.json.ratio - a.json.ratio);\n"
+        "jsCode": "// Score each channel's recent long-form videos against that channel's median\n// views, keep only true outliers, and drop any video already sent in a\n// previous run (tracked in workflow static data).\nconst config = $('Set your channels & limits').first().json;\nconst multiplier = Number(config.outlier_multiplier) || 3;\nconst minViews = Number(config.min_views) || 0;\nconst lookback = Number(config.lookback_videos) || 15;\n\nconst staticData = $getWorkflowStaticData('global');\nstaticData.sentOutliers ??= {};\nconst sent = staticData.sentOutliers;\n\nconst byChannel = {};\nfor (const { json: v } of $input.all()) {\n  if (!v.channelName || !v.videoUrl) continue;\n  (byChannel[v.channelName] ??= []).push(v);\n}\n\nconst outliers = [];\nfor (const [channel, allVideos] of Object.entries(byChannel)) {\n  const videos = allVideos.slice(0, lookback);\n  const views = videos.map(v => v.viewCount || 0).sort((a, b) => a - b);\n  if (!views.length) continue;\n  const mid = Math.floor(views.length / 2);\n  const median = views.length % 2 ? views[mid] : (views[mid - 1] + views[mid]) / 2;\n  if (!median) continue;\n  for (const v of videos) {\n    const ratio = (v.viewCount || 0) / median;\n    if (ratio < multiplier || (v.viewCount || 0) < minViews) continue;\n    if (sent[v.videoUrl]) continue; // already sent in an earlier run\n    sent[v.videoUrl] = new Date().toISOString();\n    outliers.push({ json: {\n      channel,\n      title: v.videoTitle,\n      url: v.videoUrl,\n      views: v.viewCount,\n      channel_median: Math.round(median),\n      ratio: +ratio.toFixed(1),\n      other_titles: videos.filter(o => o !== v).map(o => o.videoTitle).slice(0, 8),\n    }});\n  }\n}\nreturn outliers.sort((a, b) => b.json.ratio - a.json.ratio);\n"
       },
-      "name": "Find outliers (3x+)",
+      "name": "Score videos & drop repeats",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        520,
-        300
+        720,
+        320
       ],
-      "id": "n3"
+      "id": "n4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $('Score videos & drop repeats').all().length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "larger"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Any new outliers?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        960,
+        320
+      ],
+      "id": "n5"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=This video got {{ $json.ratio }}x its channel's normal views (views / median of the channel's recent long-form uploads).\n\nChannel: {{ $json.channel }}\nOutlier: \"{{ $json.title }}\" ({{ $json.views }} views, channel normal {{ $json.channel_median }})\nTheir other recent titles: {{ $json.other_titles.join(' | ') }}\n\n1. In 1-2 sentences, why this title/topic likely popped compared with their other titles (a guess, say so).\n2. Give 3 video ideas for MY channel: [DESCRIBE YOUR CHANNEL HERE, e.g. AI tools and tutorials for people building apps with AI]. Each idea = a title + one line. Be concrete, no hype words. Never write a model version number (no 'Claude 3.5', 'GPT-4o', etc.), because your training data may be out of date. Name products only."
+        "text": "=This video got {{ $json.ratio }}x its channel's normal views (views / median of the channel's recent long-form uploads).\n\nChannel: {{ $json.channel }}\nOutlier: \"{{ $json.title }}\" ({{ $json.views }} views, channel normal {{ $json.channel_median }})\nTheir other recent titles: {{ $json.other_titles.join(' | ') }}\n\n1. In 1-2 sentences, why this title/topic likely popped compared with their other titles (a guess, say so).\n2. Give 3 video ideas for MY channel: {{ $('Set your channels & limits').first().json.my_channel_description }}. Each idea = a title + one line. Be concrete, no hype words. Never write a model version number (no 'Claude 3.5', 'GPT-4o', etc.), because your training data may be out of date. Name products only."
       },
-      "name": "Why it popped + 3 ideas",
+      "name": "Explain why it popped + 3 ideas",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.5,
       "position": [
-        780,
-        300
+        1200,
+        320
       ],
-      "id": "n4"
+      "id": "n6"
     },
     {
       "parameters": {
         "modelName": "models/gemini-3.5-flash",
         "options": {}
       },
-      "name": "Chat model",
+      "name": "Chat model (Gemini)",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        800,
-        520
+        1220,
+        540
       ],
-      "id": "n6"
+      "id": "n7"
     },
     {
       "parameters": {
-        "text": "={{ $('Find outliers (3x+)').item.json.channel }}: \"{{ $('Find outliers (3x+)').item.json.title }}\"\n{{ $('Find outliers (3x+)').item.json.ratio }}x their normal\n\n{{ $json.text }}",
+        "text": "=🔥 {{ $('Score videos & drop repeats').item.json.channel }}: \"{{ $('Score videos & drop repeats').item.json.title }}\"\n{{ $('Score videos & drop repeats').item.json.ratio }}x the channel's normal ({{ $('Score videos & drop repeats').item.json.views }} views vs {{ $('Score videos & drop repeats').item.json.channel_median }} median)\n{{ $('Score videos & drop repeats').item.json.url }}\n\n{{ $json.text }}",
         "additionalFields": {},
         "chatId": "YOUR_TELEGRAM_CHAT_ID"
       },
-      "name": "Ping me on Telegram",
+      "name": "Send outlier alert to Telegram",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1040,
-        300
+        1440,
+        320
       ],
-      "id": "n5",
-      "webhookId": "641c6ea6-a688-4c79-82ff-64d491394c36"
+      "id": "n8"
+    },
+    {
+      "parameters": {
+        "text": "=⚠️ YouTube Outlier Finder: the Apify scrape failed this week, so no outliers were checked.\n\nError: {{ $json.errorMessage ?? $json.error ?? $json.message ?? 'unknown error' }}",
+        "additionalFields": {},
+        "chatId": "YOUR_TELEGRAM_CHAT_ID"
+      },
+      "name": "Send failure alert to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        580
+      ],
+      "id": "n9"
     }
   ],
   "connections": {
-    "Every Monday 9am": {
+    "Run every Monday 9am": {
       "main": [
         [
           {
-            "node": "YouTube Channel Scraper",
+            "node": "Set your channels & limits",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "YouTube Channel Scraper": {
+    "Set your channels & limits": {
       "main": [
         [
           {
-            "node": "Find outliers (3x+)",
+            "node": "Scrape channels on Apify",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Find outliers (3x+)": {
+    "Scrape channels on Apify": {
       "main": [
         [
           {
-            "node": "Why it popped + 3 ideas",
+            "node": "Score videos & drop repeats",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send failure alert to Telegram",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Why it popped + 3 ideas": {
+    "Score videos & drop repeats": {
       "main": [
         [
           {
-            "node": "Ping me on Telegram",
+            "node": "Any new outliers?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Chat model": {
+    "Any new outliers?": {
+      "main": [
+        [
+          {
+            "node": "Explain why it popped + 3 ideas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Explain why it popped + 3 ideas": {
+      "main": [
+        [
+          {
+            "node": "Send outlier alert to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat model (Gemini)": {
       "ai_languageModel": [
         [
           {
-            "node": "Why it popped + 3 ideas",
+            "node": "Explain why it popped + 3 ideas",
             "type": "ai_languageModel",
             "index": 0
           }

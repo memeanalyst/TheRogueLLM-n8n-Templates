@@ -6,17 +6,16 @@ Free n8n workflows from The Rogue LLM YouTube channel: https://www.youtube.com/@
 
 `youtube-outlier-finder/YouTube-Outlier-Finder.json`
 
-Every Monday it checks the channels you choose, finds the long videos doing 3x or more of that channel's normal views (views ÷ the median of its recent long-form uploads), and sends you why each one popped plus 3 video ideas for your channel.
+Every Monday it checks the channels you choose, finds the long videos doing 3x or more of that channel's normal views (views ÷ the median of its recent long-form uploads), and sends you one Telegram message per outlier with why it likely popped plus 3 video ideas for your channel. An outlier is never sent twice, and a quiet week sends nothing.
 
-**Nodes:** Schedule Trigger → Apify (YouTube Channel Scraper, Skip Shorts on) → Code (outlier math) → Basic LLM Chain + any chat model → Telegram
+**Nodes:** Schedule Trigger → Set (your channels & limits) → Apify (YouTube Channel Scraper, Skip Shorts on) → Code (outlier math + dedupe) → IF (any new outliers?) → Basic LLM Chain + any chat model → Telegram. If the scrape itself fails, a side branch sends a failure alert instead of staying silent.
 
 ### Setup
 1. In n8n: **Workflows → Import from file**, pick the JSON.
 2. Install the Apify community node (`@apify/n8n-nodes-apify`) if you don't have it, and add your Apify API token.
-3. In the Apify node, replace `@YourCompetitor` / `UCxxxxxxxxxxxxxxxxxxxxxx` with the channels you want to track (handles, channel IDs or URLs).
+3. In **Set your channels & limits**, replace the placeholder channels with the ones you want to track (handles, channel IDs or URLs), tune the multiplier and view floor, and describe your channel in one line.
 4. Add a chat model credential (Gemini is set by default; any chat model works).
-5. In the LLM node, replace `[DESCRIBE YOUR CHANNEL HERE]` with what your channel is about.
-6. Add your Telegram bot credential and replace `YOUR_TELEGRAM_CHAT_ID` (or swap Telegram for Slack or email).
+5. Add your Telegram bot credential and replace `YOUR_TELEGRAM_CHAT_ID` in both Telegram nodes (or swap Telegram for Slack or email).
 
 Disclosure: the YouTube Channel Scraper actor is built by us, and we earn when it runs.
 
