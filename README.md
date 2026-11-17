@@ -34,3 +34,20 @@ Paste your t-shirt, mug and sticker slogans into a Google Sheet and it checks ea
 4. Run it manually, or let the daily schedule check for new slogans. Each run checks the rows that don't have a verdict yet (up to 10 trademark records per slogan, $0.004 per record on your Apify account).
 
 Disclosure: the USPTO Trademark Search actor is built by us, and we earn when it runs.
+
+## Competitor Stealth Radar — New Trademark Filing Alerts
+
+`competitor-stealth-radar/Competitor-Stealth-Radar.json`
+
+Companies file trademarks months before they announce a product, feature, or sub-brand. Every Monday this workflow checks the competitors on your watchlist against the official USPTO database, spots filings that are new since the last run, has an AI explain in plain English what each filing probably signals, and posts one alert per filing to Slack. Every filing is written to a Log sheet, and that log is the memory: a filing whose serial number is already logged is never alerted twice.
+
+**Nodes:** Schedule Trigger → Set (lookback window & caps) → Google Sheets (read filing log) → Google Sheets (read watchlist) → Loop Over Items → Apify (USPTO Trademark Search, by owner) → Code (keep only new filings) → IF (new filing?) → Basic LLM Chain + Gemini → Code (build alert + log row) → Slack → Google Sheets (append to log)
+
+### Setup
+1. In n8n: **Workflows → Import from file**, pick the JSON.
+2. Install the Apify community node (`@apify/n8n-nodes-apify`) if you don't have it, and add your Apify API token.
+3. Create a Google Sheet with a tab named `Watchlist` (header `ownerName`, one exact USPTO owner name per row, e.g. `Nike, Inc.`) and a tab named `Log` with the headers `serialNumber | wordmark | owner | filedDate | internationalClasses | goodsAndServices | aiSummary | dateLogged`. Connect it in all three Google Sheets nodes. Don't delete Log rows — the Log is the workflow's memory.
+4. Add a chat model credential (Gemini is set by default; any chat model works) and connect the Slack node to your workspace and channel.
+5. Run it once manually, then activate the Monday schedule. Only filings from the last 14 days are fetched, so weekly runs cost a few cents (the actor charges $0.004 per trademark record returned, on your Apify account).
+
+Disclosure: the USPTO Trademark Search actor is built by us, and we earn when it runs.

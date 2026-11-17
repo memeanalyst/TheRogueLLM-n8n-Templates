@@ -1,0 +1,619 @@
+{
+  "name": "Competitor Stealth Radar — New Trademark Filing Alerts",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Competitor Stealth Radar — new trademark filing alerts\n### How it works\nCompanies file trademarks months before they announce a product, feature, or sub-brand. Every Monday this workflow checks the companies on your watchlist against the official USPTO database (via the USPTO Trademark Search actor on Apify), spots filings that are new since the last run, has an AI explain in plain English what each filing probably signals, and posts one alert per filing to Slack. Every filing found is written to your Log sheet, and that log is the memory: a filing whose serial number is already logged is never alerted twice. Only filings from the last 14 days are fetched, so weekly runs stay cheap.\n### Setup\n1. Make a Google Sheet with two tabs: Watchlist (one column, ownerName — the exact USPTO owner name of each competitor) and Log (columns: serialNumber, wordmark, owner, filedDate, internationalClasses, goodsAndServices, aiSummary, dateLogged).\n2. Point both Sheets read nodes and the Log append node at your sheet and connect your Google account.\n3. Connect your Apify account in the search node, a Gemini key in the chat model (or swap in another model), and your Slack workspace and channel in the alert node.\n### Customization\nWiden lookback_days in the settings node for a longer window, raise max_results_per_competitor for very large filers, or change the Monday schedule.",
+        "width": 920,
+        "height": 320
+      },
+      "name": "Sticky st1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -320
+      ],
+      "id": "st1"
+    },
+    {
+      "parameters": {
+        "content": "## ⚠️ Don't delete Log rows\nThe Log tab is this workflow's memory. Deleting rows makes those filings look new again, and they will re-alert on the next run.",
+        "width": 480,
+        "height": 140,
+        "color": 3
+      },
+      "name": "Sticky st2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        440,
+        620
+      ],
+      "id": "st2"
+    },
+    {
+      "parameters": {
+        "content": "## 1 · Watchlist & settings\nThe settings node holds the lookback window and the per-competitor cap. The Watchlist tab lists the exact USPTO owner names to track, and the Log tab is read once per run so already-seen filings can be filtered out.",
+        "width": 900,
+        "height": 380,
+        "color": 7
+      },
+      "name": "Sticky st3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        200
+      ],
+      "id": "st3"
+    },
+    {
+      "parameters": {
+        "content": "## 2 · Check each competitor\nCompetitors are checked one at a time. For each one, the actor searches USPTO by owner name, live marks only, filed inside the window. The filter then keeps only filings whose serial number is not already in the Log.",
+        "width": 730,
+        "height": 380,
+        "color": 7
+      },
+      "name": "Sticky st4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        900,
+        200
+      ],
+      "id": "st4"
+    },
+    {
+      "parameters": {
+        "content": "## 3 · Explain the filing\nEach genuinely new filing goes to the LLM, which reads the goods and services text and drafts a short, plain-English guess at what the competitor is building and why it matters. The alert text and the log row are assembled next.",
+        "width": 730,
+        "height": 380,
+        "color": 7
+      },
+      "name": "Sticky st5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1650,
+        200
+      ],
+      "id": "st5"
+    },
+    {
+      "parameters": {
+        "content": "## 4 · Alert, then log\nOne Slack message per new filing — never a digest. The filing is appended to the Log only after its alert has been sent, so if a run fails mid-way the filing is re-alerted next week instead of being lost silently.",
+        "width": 480,
+        "height": 380,
+        "color": 7
+      },
+      "name": "Sticky st6",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        200
+      ],
+      "id": "st6"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "name": "Run every Monday 9am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        340
+      ],
+      "id": "n1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "lookback_days",
+              "value": 14,
+              "type": "number"
+            },
+            {
+              "id": "a2",
+              "name": "max_results_per_competitor",
+              "value": 50,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set your watch settings",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        230,
+        340
+      ],
+      "id": "n2"
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultName": "Watchlist"
+        },
+        "options": {}
+      },
+      "name": "Read competitor watchlist",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        340
+      ],
+      "id": "n3"
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=1",
+          "cachedResultName": "Log"
+        },
+        "options": {}
+      },
+      "name": "Read filing log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        480
+      ],
+      "id": "n4",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "name": "Check competitors one by one",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        690,
+        340
+      ],
+      "id": "n5"
+    },
+    {
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor and get dataset",
+        "actorId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "I8KvtBliDeyVghVzU"
+        },
+        "customBody": "={{ JSON.stringify({ owner: $json.ownerName, status: 'live', filedAfter: $now.minus({ days: Number($('Set your watch settings').first().json.lookback_days) || 14 }).toFormat('yyyy-MM-dd'), maxResults: Number($('Set your watch settings').first().json.max_results_per_competitor) || 50 }) }}",
+        "maxTotalChargeUsd": 0.25,
+        "timeout": 300
+      },
+      "name": "Search filings by owner on Apify",
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        920,
+        340
+      ],
+      "id": "n6",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Keep only filings that are genuinely new: drop anything whose serial\n// number is already in the Log sheet, and duplicates inside this batch.\n// The Apify node always outputs one item, so an empty result arrives as an\n// item with no serialNumber. When nothing is new, emit ONE marker item so\n// the loop still advances to the next competitor.\nconst logged = new Set(\n  $('Read filing log').all()\n    .map(i => String(i.json.serialNumber ?? ''))\n    .filter(Boolean)\n);\nconst seenThisRun = new Set();\nconst fresh = [];\nfor (const { json: f } of $input.all()) {\n  if (!f.serialNumber) continue;\n  const serial = String(f.serialNumber);\n  if (logged.has(serial) || seenThisRun.has(serial)) continue;\n  seenThisRun.add(serial);\n  fresh.push({ json: {\n    serialNumber: serial,\n    wordmark: f.wordmark ?? '',\n    owner: f.owner ?? '',\n    filedDate: f.filedDate ?? '',\n    internationalClasses: (f.internationalClasses ?? []).join(', '),\n    goodsAndServices: f.goodsAndServices ?? '',\n    tsdrUrl: f.tsdrUrl ?? '',\n    isNew: 1,\n  }});\n}\nif (!fresh.length) {\n  return [{ json: { noneFound: true, isNew: 0 } }];\n}\nreturn fresh;\n"
+      },
+      "name": "Keep only new filings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1150,
+        340
+      ],
+      "id": "n7"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.isNew ?? 0 }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Is this a new filing?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        340
+      ],
+      "id": "n8"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=A competitor just filed a new U.S. trademark application.\n\nOwner: {{ $json.owner }}\nMark: \"{{ $json.wordmark }}\"\nFiled: {{ $json.filedDate }}\nClass(es): {{ $json.internationalClasses }}\nGoods/services: {{ $json.goodsAndServices }}\n\nIn 2-3 sentences of plain English: what product, feature, or sub-brand does this filing most likely signal, and why should a competitor care? Base it only on the goods/services text, say clearly that it is a guess, and do not invent details that are not in the filing. Never write a model version number (no 'Claude 3.5', 'GPT-4o', etc.); name products only."
+      },
+      "name": "Explain what they're building",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1610,
+        340
+      ],
+      "id": "n9"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash",
+        "options": {}
+      },
+      "name": "Chat model (Gemini)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1630,
+        560
+      ],
+      "id": "n10"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Assemble the Slack alert text and the Log-sheet row for one new filing:\n// the filing fields come from the filter node, the AI summary is this\n// item's input (the LLM chain's text output).\nconst f = $('Keep only new filings').item.json;\nconst summary = $json.text ?? '';\nconst markDisplay = f.wordmark ? `\"${f.wordmark}\"` : '(design mark \\u2014 no wordmark text)';\nconst alertText = [\n  '\\uD83D\\uDEA8 New competitor trademark filing',\n  `*${f.owner}* filed ${markDisplay}`,\n  `Class ${f.internationalClasses} \\u00B7 Filed ${f.filedDate} \\u00B7 Serial ${f.serialNumber}`,\n  summary,\n  `USPTO record: ${f.tsdrUrl}`,\n].join('\\n');\nreturn { json: {\n  serialNumber: f.serialNumber,\n  wordmark: f.wordmark,\n  owner: f.owner,\n  filedDate: f.filedDate,\n  internationalClasses: f.internationalClasses,\n  goodsAndServices: f.goodsAndServices,\n  aiSummary: summary,\n  dateLogged: new Date().toISOString().slice(0, 10),\n  alertText,\n} };\n"
+      },
+      "name": "Build the alert + log row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1840,
+        340
+      ],
+      "id": "n11"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#competitor-alerts"
+        },
+        "text": "={{ $json.alertText }}",
+        "otherOptions": {}
+      },
+      "name": "Send alert to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        2070,
+        340
+      ],
+      "id": "n12"
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=1",
+          "cachedResultName": "Log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "schema": [
+            {
+              "id": "serialNumber",
+              "displayName": "serialNumber",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "wordmark",
+              "displayName": "wordmark",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "owner",
+              "displayName": "owner",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "filedDate",
+              "displayName": "filedDate",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "internationalClasses",
+              "displayName": "internationalClasses",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "goodsAndServices",
+              "displayName": "goodsAndServices",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "aiSummary",
+              "displayName": "aiSummary",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateLogged",
+              "displayName": "dateLogged",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            }
+          ],
+          "value": {
+            "serialNumber": "={{ $json.serialNumber }}",
+            "wordmark": "={{ $json.wordmark }}",
+            "owner": "={{ $json.owner }}",
+            "filedDate": "={{ $json.filedDate }}",
+            "internationalClasses": "={{ $json.internationalClasses }}",
+            "goodsAndServices": "={{ $json.goodsAndServices }}",
+            "aiSummary": "={{ $json.aiSummary }}",
+            "dateLogged": "={{ $json.dateLogged }}"
+          }
+        },
+        "options": {}
+      },
+      "name": "Log new filing to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.2,
+      "position": [
+        2300,
+        340
+      ],
+      "id": "n13"
+    }
+  ],
+  "connections": {
+    "Run every Monday 9am": {
+      "main": [
+        [
+          {
+            "node": "Set your watch settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set your watch settings": {
+      "main": [
+        [
+          {
+            "node": "Read filing log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read filing log": {
+      "main": [
+        [
+          {
+            "node": "Read competitor watchlist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read competitor watchlist": {
+      "main": [
+        [
+          {
+            "node": "Check competitors one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check competitors one by one": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Search filings by owner on Apify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search filings by owner on Apify": {
+      "main": [
+        [
+          {
+            "node": "Keep only new filings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep only new filings": {
+      "main": [
+        [
+          {
+            "node": "Is this a new filing?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is this a new filing?": {
+      "main": [
+        [
+          {
+            "node": "Explain what they're building",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check competitors one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Explain what they're building": {
+      "main": [
+        [
+          {
+            "node": "Build the alert + log row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build the alert + log row": {
+      "main": [
+        [
+          {
+            "node": "Send alert to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send alert to Slack": {
+      "main": [
+        [
+          {
+            "node": "Log new filing to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log new filing to Sheet": {
+      "main": [
+        [
+          {
+            "node": "Check competitors one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat model (Gemini)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Explain what they're building",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
