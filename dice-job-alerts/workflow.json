@@ -1,0 +1,602 @@
+{
+ "name": "Dice Job Alerts \u2014 New Postings from Your Watchlist",
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## Dice Job Alerts \u2014 new postings from your watchlist\n### How it works\nDice is where a large share of US tech jobs are posted first. Every morning this workflow runs each search on your watchlist through the **Dice Jobs Scraper** actor on Apify, compares the results against the Log tab in your Google Sheet, and sends **one Slack alert per genuinely new posting**, each with a one-line AI summary of the role. Postings you have already been alerted about are never sent twice.\n\n### Setup\n1. Add your **Apify** credential to the Apify node (the actor is magnova/dice-jobs-monitor \u2014 $0.001 per posting returned, no start fee).\n2. Create a Google Sheet with two tabs: **Watchlist** (columns: `query`, `location`, `workplaceTypes`) and **Log** (columns: `diceJobId`, `jobTitle`, `company`, `location`, `aiSummary`, `dateLogged`). Point both Sheets nodes at it.\n3. Add a **Google Gemini** credential to the chat model node.\n4. Point the Slack node at your channel.\n\n### Cost\nEach check returns the postings inside your posted window (up to the per-search cap in the settings node), so a daily run costs at most a few cents per search \u2014 alerts themselves only fire for postings that are new to the Log.",
+    "width": 920,
+    "height": 320
+   },
+   "name": "Sticky st1",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -40,
+    -320
+   ],
+   "id": "st1"
+  },
+  {
+   "parameters": {
+    "content": "## \u26a0\ufe0f Don't delete Log rows\nThe Log tab is this workflow's memory. Deleting rows makes those postings look new again, and they will re-alert on the next run.",
+    "width": 480,
+    "height": 140,
+    "color": 3
+   },
+   "name": "Sticky st2",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    440,
+    620
+   ],
+   "id": "st2"
+  },
+  {
+   "parameters": {
+    "content": "## 1 \u00b7 Watchlist & settings\nThe settings node holds the posted window (1, 3 or 7 days), the per-search result cap and the per-search alert cap. The Watchlist tab lists the searches to run \u2014 a query, an optional location, and optional workplace types (Remote, Hybrid, On-Site). The Log tab is read once per run so already-alerted postings can be filtered out.",
+    "width": 900,
+    "height": 380,
+    "color": 7
+   },
+   "name": "Sticky st3",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -20,
+    200
+   ],
+   "id": "st3"
+  },
+  {
+   "parameters": {
+    "content": "## 2 \u00b7 Check each search\nSearches are checked one at a time. For each one, the actor searches Dice with the row's query, location and workplace types, inside the posted window. The filter then keeps only postings whose Dice job ID is not already in the Log, up to the alert cap.",
+    "width": 730,
+    "height": 380,
+    "color": 7
+   },
+   "name": "Sticky st4",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    900,
+    200
+   ],
+   "id": "st4"
+  },
+  {
+   "parameters": {
+    "content": "## 3 \u00b7 Summarize the posting\nEach genuinely new posting goes to the LLM, which reads the posting's own text and drafts a one-line summary: what the role is and what stack it centers on. The alert text is assembled from the posting fields plus that summary.",
+    "width": 730,
+    "height": 380,
+    "color": 7
+   },
+   "name": "Sticky st5",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    1650,
+    200
+   ],
+   "id": "st5"
+  },
+  {
+   "parameters": {
+    "content": "## 4 \u00b7 Alert, then log\nOne Slack message per new posting \u2014 never a digest. The posting is appended to the Log only after its alert has been sent, so if a run fails mid-way the posting is re-alerted on the next run instead of being lost.",
+    "width": 480,
+    "height": 380,
+    "color": 7
+   },
+   "name": "Sticky st6",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    2400,
+    200
+   ],
+   "id": "st6"
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "days",
+       "triggerAtHour": 8
+      }
+     ]
+    }
+   },
+   "name": "Run every morning 8am",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    340
+   ],
+   "id": "n1"
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "a1",
+       "name": "posted_window_days",
+       "value": 7,
+       "type": "number"
+      },
+      {
+       "id": "a2",
+       "name": "max_results_per_search",
+       "value": 50,
+       "type": "number"
+      },
+      {
+       "id": "a3",
+       "name": "max_alerts_per_search",
+       "value": 10,
+       "type": "number"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "name": "Set your watch settings",
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    230,
+    340
+   ],
+   "id": "n2"
+  },
+  {
+   "parameters": {
+    "resource": "sheet",
+    "operation": "read",
+    "documentId": {
+     "__rl": true,
+     "mode": "url",
+     "value": ""
+    },
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": "gid=0",
+     "cachedResultName": "Watchlist"
+    },
+    "options": {}
+   },
+   "name": "Read job watchlist",
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.2,
+   "position": [
+    460,
+    340
+   ],
+   "id": "n3"
+  },
+  {
+   "parameters": {
+    "resource": "sheet",
+    "operation": "read",
+    "documentId": {
+     "__rl": true,
+     "mode": "url",
+     "value": ""
+    },
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": "gid=1",
+     "cachedResultName": "Log"
+    },
+    "options": {}
+   },
+   "name": "Read alert log",
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.2,
+   "position": [
+    460,
+    480
+   ],
+   "id": "n4",
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "batchSize": 1,
+    "options": {}
+   },
+   "name": "Check searches one by one",
+   "type": "n8n-nodes-base.splitInBatches",
+   "typeVersion": 3,
+   "position": [
+    690,
+    340
+   ],
+   "id": "n5"
+  },
+  {
+   "parameters": {
+    "resource": "Actors",
+    "operation": "Run actor and get dataset",
+    "actorId": {
+     "__rl": true,
+     "mode": "id",
+     "value": "YYGe1r58Cxd02CO48"
+    },
+    "customBody": "={{ JSON.stringify({ query: $json.query, location: $json.location || undefined, workplaceTypes: $json.workplaceTypes ? String($json.workplaceTypes).split(',').map(s => s.trim()).filter(Boolean) : [], postedDate: ({ '1': 'ONE', '3': 'THREE', '7': 'SEVEN' })[String(Number($('Set your watch settings').first().json.posted_window_days) || 7)] || 'SEVEN', maxResults: Number($('Set your watch settings').first().json.max_results_per_search) || 50 }) }}",
+    "maxTotalChargeUsd": 0.1,
+    "timeout": 300
+   },
+   "name": "Search Dice jobs on Apify",
+   "type": "@apify/n8n-nodes-apify.apify",
+   "typeVersion": 1,
+   "position": [
+    920,
+    340
+   ],
+   "id": "n6",
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "jsCode": "// Keep only postings that are genuinely new: drop the run SUMMARY and any\n// ERROR rows, drop postings whose Dice job ID is already in the Log sheet,\n// and drop duplicates inside this batch. When nothing is new, emit ONE\n// marker item so the loop still advances to the next search. New postings\n// beyond the per-search alert cap are left unlogged on purpose: they stay\n// inside the posted window and surface on the next run instead of flooding\n// the channel today.\nconst settings = $('Set your watch settings').first().json;\nconst cap = Number(settings.max_alerts_per_search) || 10;\nconst logged = new Set(\n  $('Read alert log').all()\n    .map(i => String(i.json.diceJobId ?? ''))\n    .filter(Boolean)\n);\nconst seenThisRun = new Set();\nconst fresh = [];\nfor (const { json: j } of $input.all()) {\n  if (!j.diceJobId) continue;\n  if (j.recordType === 'SUMMARY' || j.recordType === 'ERROR') continue;\n  const id = String(j.diceJobId);\n  if (logged.has(id) || seenThisRun.has(id)) continue;\n  seenThisRun.add(id);\n  fresh.push({ json: {\n    diceJobId: id,\n    jobTitle: j.jobTitle ?? '',\n    company: j.company ?? '',\n    location: j.location ?? '',\n    employmentType: j.employmentType ?? '',\n    workplaceTypes: (j.workplaceTypes ?? []).join(', '),\n    salary: j.salary ?? '',\n    postedDate: j.postedDate ?? '',\n    summary: j.summary ?? '',\n    jobUrl: j.jobUrl ?? '',\n    isNew: 1,\n  }});\n}\nconst capped = fresh.slice(0, cap);\nif (!capped.length) {\n  return [{ json: { noneFound: true, isNew: 0 } }];\n}\nreturn capped;\n"
+   },
+   "name": "Keep only new jobs",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1150,
+    340
+   ],
+   "id": "n7"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "loose"
+     },
+     "conditions": [
+      {
+       "id": "c1",
+       "leftValue": "={{ $json.isNew ?? 0 }}",
+       "rightValue": 1,
+       "operator": {
+        "type": "number",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Is this a new job?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2,
+   "position": [
+    1380,
+    340
+   ],
+   "id": "n8"
+  },
+  {
+   "parameters": {
+    "promptType": "define",
+    "text": "=A new tech job posting just appeared on Dice.\n\nTitle: {{ $json.jobTitle }}\nCompany: {{ $json.company }}\nLocation: {{ $json.location }}\nType: {{ $json.employmentType }} \u00b7 {{ $json.workplaceTypes }}\nSalary (as listed): {{ $json.salary }}\nPosted: {{ $json.postedDate }}\nAbout the role: {{ $json.summary }}\n\nIn 1-2 short sentences: what is this role, and what stack or skills does it center on? Base it only on the posting text above, and do not invent details that are not in the posting."
+   },
+   "name": "Summarize the posting",
+   "type": "@n8n/n8n-nodes-langchain.chainLlm",
+   "typeVersion": 1.5,
+   "position": [
+    1610,
+    340
+   ],
+   "id": "n9"
+  },
+  {
+   "parameters": {
+    "modelName": "models/gemini-3.5-flash",
+    "options": {}
+   },
+   "name": "Chat model (Gemini)",
+   "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+   "typeVersion": 1,
+   "position": [
+    1630,
+    560
+   ],
+   "id": "n10"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "// Assemble the Slack alert text and the Log-sheet row for one new posting:\n// the posting fields come from the filter node, the AI summary is this\n// item's input (the LLM chain's text output).\nconst j = $('Keep only new jobs').item.json;\nconst summary = $json.text ?? '';\nconst payLine = j.salary ? `\\nPay (as listed): ${j.salary}` : '';\nconst alertText = [\n  '\\uD83C\\uDD95 New Dice posting',\n  `*${j.jobTitle}* at ${j.company}`,\n  `${j.location || 'Location not listed'} \\u00B7 ${j.employmentType} \\u00B7 ${j.workplaceTypes} \\u00B7 Posted ${String(j.postedDate).slice(0, 10)}${payLine}`,\n  summary,\n  `Posting: ${j.jobUrl}`,\n].join('\\n');\nreturn { json: {\n  diceJobId: j.diceJobId,\n  jobTitle: j.jobTitle,\n  company: j.company,\n  location: j.location,\n  aiSummary: summary,\n  dateLogged: new Date().toISOString().slice(0, 10),\n  alertText,\n} };\n"
+   },
+   "name": "Build the alert + log row",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1840,
+    340
+   ],
+   "id": "n11"
+  },
+  {
+   "parameters": {
+    "resource": "message",
+    "operation": "post",
+    "channelId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "#job-alerts"
+    },
+    "text": "={{ $json.alertText }}",
+    "otherOptions": {}
+   },
+   "name": "Send alert to Slack",
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.2,
+   "position": [
+    2070,
+    340
+   ],
+   "id": "n12"
+  },
+  {
+   "parameters": {
+    "resource": "sheet",
+    "operation": "append",
+    "documentId": {
+     "__rl": true,
+     "mode": "url",
+     "value": ""
+    },
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": "gid=1",
+     "cachedResultName": "Log"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "schema": [
+      {
+       "id": "diceJobId",
+       "displayName": "diceJobId",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "jobTitle",
+       "displayName": "jobTitle",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "company",
+       "displayName": "company",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "location",
+       "displayName": "location",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "aiSummary",
+       "displayName": "aiSummary",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "dateLogged",
+       "displayName": "dateLogged",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      }
+     ],
+     "value": {
+      "diceJobId": "={{ $json.diceJobId }}",
+      "jobTitle": "={{ $json.jobTitle }}",
+      "company": "={{ $json.company }}",
+      "location": "={{ $json.location }}",
+      "aiSummary": "={{ $json.aiSummary }}",
+      "dateLogged": "={{ $json.dateLogged }}"
+     }
+    },
+    "options": {}
+   },
+   "name": "Log new job to Sheet",
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.2,
+   "position": [
+    2300,
+    340
+   ],
+   "id": "n13"
+  }
+ ],
+ "connections": {
+  "Run every morning 8am": {
+   "main": [
+    [
+     {
+      "node": "Set your watch settings",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Set your watch settings": {
+   "main": [
+    [
+     {
+      "node": "Read alert log",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read alert log": {
+   "main": [
+    [
+     {
+      "node": "Read job watchlist",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read job watchlist": {
+   "main": [
+    [
+     {
+      "node": "Check searches one by one",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Check searches one by one": {
+   "main": [
+    [],
+    [
+     {
+      "node": "Search Dice jobs on Apify",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search Dice jobs on Apify": {
+   "main": [
+    [
+     {
+      "node": "Keep only new jobs",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Keep only new jobs": {
+   "main": [
+    [
+     {
+      "node": "Is this a new job?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Is this a new job?": {
+   "main": [
+    [
+     {
+      "node": "Summarize the posting",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Check searches one by one",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Summarize the posting": {
+   "main": [
+    [
+     {
+      "node": "Build the alert + log row",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build the alert + log row": {
+   "main": [
+    [
+     {
+      "node": "Send alert to Slack",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Send alert to Slack": {
+   "main": [
+    [
+     {
+      "node": "Log new job to Sheet",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Log new job to Sheet": {
+   "main": [
+    [
+     {
+      "node": "Check searches one by one",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Chat model (Gemini)": {
+   "ai_languageModel": [
+    [
+     {
+      "node": "Summarize the posting",
+      "type": "ai_languageModel",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1"
+ }
+}
