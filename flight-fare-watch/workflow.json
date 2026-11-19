@@ -1,0 +1,577 @@
+{
+ "name": "Fare Drop Watch \u2014 Flight Price Alerts from Your Watchlist",
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## Fare Drop Watch \u2014 get alerted only when a fare actually drops\n### How it works\nYou keep a watchlist of flights in a Google Sheet: origin, destination, dates, and an optional target price. Every morning this workflow runs each watch through the **Flight Price Watch** actor on Apify in watch mode. The actor remembers the fares it has seen, so repeat checks return only what changed. When a fare drops \u2014 or hits your target \u2014 you get one Slack alert per drop with the old price, the new price, and the booking link, and the drop is written to the Alert Log tab so it is never sent twice. Checks that find no drop cost nothing and send nothing.\n### Setup\nYou need an Apify account (connect it on the \"Check fares on Apify\" node), a Google Sheet with two tabs \u2014 **Watchlist** (headers: origin, destination, departureDate, returnDate, targetPrice, cabinClass, currency) and **Alert Log** (headers: flightKey, route, departureDate, airlines, previousPrice, newPrice, dropPercent, changeType, alertedAt, link) \u2014 and a Slack channel for the alerts. Dates use YYYY-MM-DD. Point both Sheets nodes at your spreadsheet and set your channel on the Slack node.\n### Customization\nRaise max_alerts_per_watch if you watch busy routes, run the schedule twice a day for fast-moving fares, or swap the Slack node for Telegram or email \u2014 the alert text is already built for you.",
+    "height": 320,
+    "width": 920
+   },
+   "name": "Sticky st1",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -40,
+    -320
+   ],
+   "id": "stickyst1"
+  },
+  {
+   "parameters": {
+    "content": "## \u26a0\ufe0f First check = baseline only\nThe first time a watch runs, the Actor records today's fares as its baseline and returns no drops. Alerts start from the second check. That is the watch working as designed \u2014 not a failure.",
+    "height": 140,
+    "width": 480,
+    "color": 3
+   },
+   "name": "Sticky st2",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    1180,
+    620
+   ],
+   "id": "stickyst2"
+  },
+  {
+   "parameters": {
+    "content": "## 1 \u00b7 Watchlist & settings\nThe settings node holds the per-run limits. The workflow reads the Alert Log first (its memory of drops already sent), then the Watchlist \u2014 one row per flight you want watched.",
+    "height": 380,
+    "width": 900,
+    "color": 7
+   },
+   "name": "Sticky st3",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -20,
+    200
+   ],
+   "id": "stickyst3"
+  },
+  {
+   "parameters": {
+    "content": "## 2 \u00b7 Check each watch\nWatches run one at a time. For each row the Apify actor searches Google Flights in watch mode: the first check stores today's fares as the baseline; later checks return only drops, target hits, and a summary.",
+    "height": 380,
+    "width": 730,
+    "color": 7
+   },
+   "name": "Sticky st4",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    900,
+    200
+   ],
+   "id": "stickyst4"
+  },
+  {
+   "parameters": {
+    "content": "## 3 \u00b7 Only genuine drops pass\nBaseline rows, summaries and errors are filtered out here. What survives is a PRICE_DROP or TARGET_HIT that is not already in the Alert Log \u2014 everything else routes back to the loop quietly.",
+    "height": 380,
+    "width": 730,
+    "color": 7
+   },
+   "name": "Sticky st5",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    1650,
+    200
+   ],
+   "id": "stickyst5"
+  },
+  {
+   "parameters": {
+    "content": "## 4 \u00b7 Alert, then log\nOne Slack message per drop: route, dates, airline, old price \u2192 new price, and the Google Flights link. The drop is then appended to the Alert Log, which is what stops the same drop being alerted twice.",
+    "height": 380,
+    "width": 900,
+    "color": 7
+   },
+   "name": "Sticky st6",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    2400,
+    200
+   ],
+   "id": "stickyst6"
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "days",
+       "triggerAtHour": 8
+      }
+     ]
+    }
+   },
+   "name": "Run every morning 8am",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    340
+   ],
+   "id": "n1"
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "a1",
+       "name": "max_results_per_route",
+       "value": 20,
+       "type": "number"
+      },
+      {
+       "id": "a2",
+       "name": "max_alerts_per_watch",
+       "value": 10,
+       "type": "number"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "name": "Set your watch settings",
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    220,
+    340
+   ],
+   "id": "n2"
+  },
+  {
+   "parameters": {
+    "resource": "sheet",
+    "operation": "read",
+    "documentId": {
+     "__rl": true,
+     "mode": "url",
+     "value": ""
+    },
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": "gid=1",
+     "cachedResultName": "Alert Log"
+    },
+    "options": {}
+   },
+   "name": "Read alert log",
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.2,
+   "position": [
+    440,
+    340
+   ],
+   "id": "n3"
+  },
+  {
+   "parameters": {
+    "resource": "sheet",
+    "operation": "read",
+    "documentId": {
+     "__rl": true,
+     "mode": "url",
+     "value": ""
+    },
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": "gid=0",
+     "cachedResultName": "Watchlist"
+    },
+    "options": {}
+   },
+   "name": "Read fare watchlist",
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.2,
+   "position": [
+    660,
+    340
+   ],
+   "id": "n4"
+  },
+  {
+   "parameters": {
+    "batchSize": 1,
+    "options": {}
+   },
+   "name": "Check watches one by one",
+   "type": "n8n-nodes-base.splitInBatches",
+   "typeVersion": 3,
+   "position": [
+    960,
+    340
+   ],
+   "id": "n5"
+  },
+  {
+   "parameters": {
+    "resource": "Actors",
+    "operation": "Run actor and get dataset",
+    "actorId": {
+     "__rl": true,
+     "mode": "id",
+     "value": "eGG0ek0O3cOadXuFf"
+    },
+    "customBody": "={{ JSON.stringify({ routes: [{ origin: $json.origin, destination: $json.destination, departureDate: $json.departureDate, ...($json.returnDate ? { returnDate: $json.returnDate } : {}) }], mode: 'watch', ...($json.targetPrice ? { targetPrice: Number($json.targetPrice) } : {}), ...($json.cabinClass ? { cabinClass: String($json.cabinClass).toLowerCase() } : {}), ...($json.currency ? { currency: String($json.currency).toUpperCase() } : {}), maxResultsPerRoute: Number($('Set your watch settings').first().json.max_results_per_route) || 20 }) }}",
+    "maxTotalChargeUsd": 0.25,
+    "timeout": 300
+   },
+   "name": "Check fares on Apify",
+   "type": "@apify/n8n-nodes-apify.apify",
+   "typeVersion": 1,
+   "position": [
+    1240,
+    340
+   ],
+   "id": "n6",
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "jsCode": "// Keep only genuine fare drops. The Actor returns BASELINE rows on a\n// watch's first check, one SUMMARY row per check, and ERROR rows for\n// routes that failed \u2014 none of those are alerts. Itinerary rows\n// whose changeType is PRICE_DROP or TARGET_HIT are. Drops already in the Alert Log are skipped, as\n// are duplicates inside this batch. When nothing qualifies, emit ONE\n// marker item so the loop still advances to the next watch.\nconst settings = $('Set your watch settings').first().json;\nconst cap = Number(settings.max_alerts_per_watch) || 10;\nconst logged = new Set();\nfor (const item of $('Read alert log').all()) {\n  const j = item.json;\n  if (j.flightKey) logged.add(`${j.flightKey}|${j.newPrice}`);\n}\nconst seen = new Set();\nconst out = [];\nfor (const item of $input.all()) {\n  const j = item.json;\n  if (j.changeType !== 'PRICE_DROP' && j.changeType !== 'TARGET_HIT') continue;\n  const key = `${j.flightKey}|${j.price}`;\n  if (logged.has(key) || seen.has(key)) continue;\n  seen.add(key);\n  out.push({ json: { ...j, isDrop: 1 } });\n  if (out.length >= cap) break;\n}\nreturn out.length ? out : [{ json: { isDrop: 0 } }];"
+   },
+   "name": "Keep only price drops",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1700,
+    340
+   ],
+   "id": "n7"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "loose"
+     },
+     "conditions": [
+      {
+       "id": "c1",
+       "leftValue": "={{ $json.isDrop ?? 0 }}",
+       "rightValue": 1,
+       "operator": {
+        "type": "number",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Is this a fresh drop?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2,
+   "position": [
+    1960,
+    340
+   ],
+   "id": "n8"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "// Build the Slack alert text and the Alert Log row for one drop.\n// Log fields are named exactly like the Alert Log tab's headers.\nconst j = $json;\nconst route = `${j.origin} \\u2192 ${j.destination}`;\nconst when = j.returnDate ? `${j.departureDate} \\u2192 ${j.returnDate}` : `${j.departureDate}`;\nconst airlines = (j.airlines || []).join(', ');\nconst kind = j.changeType === 'TARGET_HIT' ? '\\u{1F3AF} Target hit' : '\\u2708\\uFE0F Fare drop';\nconst times = j.departAt ? `\\n${j.departAt} \\u2192 ${j.arriveAt || ''}` : '';\nconst drop = j.previousPrice != null\n  ? `was $${j.previousPrice}, now $${j.price} (-${j.dropPercent}%)`\n  : `now $${j.price}`;\nconst alertText = `${kind}: ${route} \\u00B7 ${when}\\n${airlines}${times}\\n${drop}\\n${j.googleFlightsUrl || ''}`.trim();\nreturn { json: {\n  alertText,\n  flightKey: j.flightKey,\n  route,\n  departureDate: j.departureDate,\n  airlines,\n  previousPrice: j.previousPrice ?? '',\n  newPrice: j.price,\n  dropPercent: j.dropPercent ?? '',\n  changeType: j.changeType,\n  alertedAt: new Date().toISOString(),\n  link: j.googleFlightsUrl || '',\n} };"
+   },
+   "name": "Build the alert + log row",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2460,
+    340
+   ],
+   "id": "n9"
+  },
+  {
+   "parameters": {
+    "resource": "message",
+    "operation": "post",
+    "channelId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "#fare-alerts"
+    },
+    "text": "={{ $json.alertText }}",
+    "otherOptions": {}
+   },
+   "name": "Send alert to Slack",
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.2,
+   "position": [
+    2700,
+    340
+   ],
+   "id": "n10"
+  },
+  {
+   "parameters": {
+    "resource": "sheet",
+    "operation": "append",
+    "documentId": {
+     "__rl": true,
+     "mode": "url",
+     "value": ""
+    },
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": "gid=1",
+     "cachedResultName": "Alert Log"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": null,
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "flightKey",
+       "displayName": "flightKey",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "route",
+       "displayName": "route",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "departureDate",
+       "displayName": "departureDate",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "airlines",
+       "displayName": "airlines",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "previousPrice",
+       "displayName": "previousPrice",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "newPrice",
+       "displayName": "newPrice",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "dropPercent",
+       "displayName": "dropPercent",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "changeType",
+       "displayName": "changeType",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "alertedAt",
+       "displayName": "alertedAt",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "link",
+       "displayName": "link",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      }
+     ]
+    },
+    "options": {}
+   },
+   "name": "Log alert to Sheet",
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.2,
+   "position": [
+    2940,
+    340
+   ],
+   "id": "n11"
+  }
+ ],
+ "connections": {
+  "Run every morning 8am": {
+   "main": [
+    [
+     {
+      "node": "Set your watch settings",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Set your watch settings": {
+   "main": [
+    [
+     {
+      "node": "Read alert log",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read alert log": {
+   "main": [
+    [
+     {
+      "node": "Read fare watchlist",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read fare watchlist": {
+   "main": [
+    [
+     {
+      "node": "Check watches one by one",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Check watches one by one": {
+   "main": [
+    [],
+    [
+     {
+      "node": "Check fares on Apify",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Check fares on Apify": {
+   "main": [
+    [
+     {
+      "node": "Keep only price drops",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Keep only price drops": {
+   "main": [
+    [
+     {
+      "node": "Is this a fresh drop?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Is this a fresh drop?": {
+   "main": [
+    [
+     {
+      "node": "Build the alert + log row",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Check watches one by one",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build the alert + log row": {
+   "main": [
+    [
+     {
+      "node": "Send alert to Slack",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Send alert to Slack": {
+   "main": [
+    [
+     {
+      "node": "Log alert to Sheet",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Log alert to Sheet": {
+   "main": [
+    [
+     {
+      "node": "Check watches one by one",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "active": false,
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "pinData": {}
+}
