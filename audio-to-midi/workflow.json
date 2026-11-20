@@ -1,0 +1,622 @@
+{
+ "name": "Audio to MIDI \u2014 Convert New Drive Audio Automatically",
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## Audio to MIDI \u2014 turn new Drive audio into MIDI files automatically\n### How it works\nDrop an audio file into a watched Google Drive folder and this workflow does the rest. It checks the file is audio, shares it so the converter can fetch it, and sends it to the **Audio to MIDI Converter** actor on Apify, which transcribes it with Spotify's Basic Pitch model. When the MIDI is ready, the workflow downloads it, saves it to your output folder, adds a row to a Google Sheet log, and sends you a Telegram message with the link, the note count, the key and the tempo. Files that are not audio are ignored, and recordings with no detectable notes are skipped without charge.\n### Setup\nConnect your own Apify account on the Apify node (the converter costs $0.01 per minute of audio, billed to your Apify account). Point the trigger at your inbox folder, the upload step at your output folder, and the Sheets step at a sheet with a **Conversions** tab (headers: sourceFile, convertedAt, noteCount, musicalKey, tempoBpm, midiLink). Add your Telegram chat ID and bot credential on the last step \u2014 or delete that step if you don't want messages.\n### Customization\nWiden the filter to video files (the converter also accepts MP4 and MOV), raise the Apify step's charge cap for long recordings, or swap Telegram for Slack or email \u2014 the message text is built for you in the step before it.",
+    "height": 320,
+    "width": 1180
+   },
+   "name": "Sticky st1",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -40,
+    -320
+   ],
+   "id": "stickyst1"
+  },
+  {
+   "parameters": {
+    "content": "## \u26a0\ufe0f This step makes the audio file public-link\nThe Share step sets the file to \"anyone with the link\" so Apify can download it. Use a dedicated inbox folder for this workflow, not a folder of private recordings.",
+    "height": 150,
+    "width": 560,
+    "color": 3
+   },
+   "name": "Sticky st2",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    740,
+    620
+   ],
+   "id": "stickyst2"
+  },
+  {
+   "parameters": {
+    "content": "## 1 \u00b7 Watch & filter\nNew files in the watched folder are handled one by one. Only audio files pass \u2014 documents, images and anything else are ignored, so the watched folder can double as a general inbox.",
+    "height": 380,
+    "width": 700,
+    "color": 7
+   },
+   "name": "Sticky st3",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -20,
+    200
+   ],
+   "id": "stickyst3"
+  },
+  {
+   "parameters": {
+    "content": "## 2 \u00b7 Convert on Apify\nEach audio file is shared with a public link so the converter can fetch it, then transcribed on Apify. Files that produce no MIDI \u2014 silence, speech without pitch, a failed fetch \u2014 loop back quietly; the converter does not charge for them.",
+    "height": 380,
+    "width": 1360,
+    "color": 7
+   },
+   "name": "Sticky st4",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    720,
+    200
+   ],
+   "id": "stickyst4"
+  },
+  {
+   "parameters": {
+    "content": "## 3 \u00b7 Save, log & notify\nThe finished MIDI is downloaded and saved to your output Drive folder. One row goes to the Sheet log \u2014 source file, date, notes, key, tempo and the Drive link \u2014 and a Telegram message announces that the file is ready.",
+    "height": 380,
+    "width": 1420,
+    "color": 7
+   },
+   "name": "Sticky st5",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    2100,
+    200
+   ],
+   "id": "stickyst5"
+  },
+  {
+   "parameters": {
+    "pollTimes": {
+     "item": [
+      {
+       "mode": "everyMinute"
+      }
+     ]
+    },
+    "triggerOn": "fileCreated",
+    "folderToWatch": {
+     "__rl": true,
+     "mode": "url",
+     "value": ""
+    },
+    "options": {}
+   },
+   "name": "Watch Drive folder for new audio",
+   "type": "n8n-nodes-base.googleDriveTrigger",
+   "typeVersion": 1,
+   "position": [
+    0,
+    340
+   ],
+   "id": "n1"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": false,
+      "leftValue": "",
+      "typeValidation": "loose"
+     },
+     "conditions": [
+      {
+       "id": "c1",
+       "leftValue": "={{ $json.mimeType }}",
+       "rightValue": "audio/",
+       "operator": {
+        "type": "string",
+        "operation": "startsWith"
+       }
+      },
+      {
+       "id": "c2",
+       "leftValue": "={{ $json.name }}",
+       "rightValue": "\\.(mp3|wav|m4a|aac|flac|ogg|oga|opus|aiff?)$",
+       "operator": {
+        "type": "string",
+        "operation": "regex"
+       }
+      }
+     ],
+     "combinator": "or"
+    },
+    "options": {}
+   },
+   "name": "Is it an audio file?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2,
+   "position": [
+    240,
+    340
+   ],
+   "id": "n2"
+  },
+  {
+   "parameters": {
+    "batchSize": 1,
+    "options": {}
+   },
+   "name": "Convert files one by one",
+   "type": "n8n-nodes-base.splitInBatches",
+   "typeVersion": 3,
+   "position": [
+    480,
+    340
+   ],
+   "id": "n3"
+  },
+  {
+   "parameters": {
+    "resource": "file",
+    "operation": "share",
+    "fileId": {
+     "__rl": true,
+     "mode": "id",
+     "value": "={{ $json.id }}"
+    },
+    "permissions": {
+     "permissions": [
+      {
+       "type": "anyone",
+       "role": "reader"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "name": "Share audio file in Drive",
+   "type": "n8n-nodes-base.googleDrive",
+   "typeVersion": 3,
+   "position": [
+    760,
+    340
+   ],
+   "id": "n4"
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "a1",
+       "name": "sourceUrl",
+       "type": "string",
+       "value": "={{ 'https://drive.google.com/uc?export=download&id=' + $json.id + '&confirm=t' }}"
+      },
+      {
+       "id": "a2",
+       "name": "driveFileId",
+       "type": "string",
+       "value": "={{ $json.id }}"
+      },
+      {
+       "id": "a3",
+       "name": "driveFileName",
+       "type": "string",
+       "value": "={{ $json.name }}"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "name": "Build Apify audio URL",
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    1020,
+    340
+   ],
+   "id": "n5"
+  },
+  {
+   "parameters": {
+    "resource": "Actors",
+    "operation": "Run actor and get dataset",
+    "actorId": {
+     "__rl": true,
+     "mode": "id",
+     "value": "z5Fhn3SdiTaU5ljpb"
+    },
+    "customBody": "={{ JSON.stringify({ sources: [$json.sourceUrl] }) }}",
+    "maxTotalChargeUsd": 2,
+    "timeout": 900
+   },
+   "name": "Convert audio to MIDI on Apify",
+   "type": "@apify/n8n-nodes-apify.apify",
+   "typeVersion": 1,
+   "position": [
+    1300,
+    340
+   ],
+   "id": "n6",
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "// Turn one converter result row into everything the delivery steps\n// need. The Actor returns one row per source file: status ok /\n// no_notes / skipped / error, with midiUrl set only when a MIDI was\n// produced. Non-ok rows are flagged so the IF can route them back to\n// the loop \u2014 the converter does not charge for them.\nlet src = {};\ntry { src = $('Build Apify audio URL').item.json || {}; } catch (e) { src = {}; }\nconst row = $json || {};\nconst ok = row.status === 'ok' && !!row.midiUrl;\nconst sourceFile = src.driveFileName || row.fileName || 'audio file';\nconst base = String(sourceFile).replace(/\\.[^.]+$/, '') || 'audio';\nreturn { json: {\n  ok: ok ? 1 : 0,\n  status: row.status || 'no_result',\n  error: row.error || (ok ? '' : 'The converter returned no result row for this file.'),\n  sourceFile,\n  title: row.title || base,\n  midiFileName: base + '.mid',\n  midiUrl: row.midiUrl || '',\n  notesJsonUrl: row.notesJsonUrl || '',\n  noteCount: row.noteCount ?? '',\n  tempoBpm: row.tempoBpm ?? '',\n  musicalKey: row.key ?? '',\n  durationSecs: row.durationSecs ?? '',\n  billedMinutes: row.billedMinutes ?? '',\n  convertedAt: row.convertedAt || new Date().toISOString(),\n} };"
+   },
+   "name": "Prepare MIDI delivery",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1580,
+    340
+   ],
+   "id": "n7"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "loose"
+     },
+     "conditions": [
+      {
+       "id": "c1",
+       "leftValue": "={{ $json.ok ?? 0 }}",
+       "rightValue": 1,
+       "operator": {
+        "type": "number",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Did the conversion succeed?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2,
+   "position": [
+    1860,
+    340
+   ],
+   "id": "n8"
+  },
+  {
+   "parameters": {
+    "method": "GET",
+    "url": "={{ $json.midiUrl }}",
+    "options": {
+     "response": {
+      "response": {
+       "responseFormat": "file"
+      }
+     },
+     "timeout": 120000
+    }
+   },
+   "name": "Download the MIDI file",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2140,
+    340
+   ],
+   "id": "n9"
+  },
+  {
+   "parameters": {
+    "resource": "file",
+    "operation": "upload",
+    "inputDataFieldName": "data",
+    "name": "={{ $('Prepare MIDI delivery').item.json.midiFileName }}",
+    "driveId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "My Drive",
+     "cachedResultName": "My Drive"
+    },
+    "folderId": {
+     "__rl": true,
+     "mode": "url",
+     "value": ""
+    },
+    "options": {}
+   },
+   "name": "Save MIDI to Drive folder",
+   "type": "n8n-nodes-base.googleDrive",
+   "typeVersion": 3,
+   "position": [
+    2420,
+    340
+   ],
+   "id": "n10"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "// Build the Sheet log row and the Telegram message for one converted\n// file. The Drive upload output carries the saved file's link; the\n// conversion facts (notes, key, tempo) come from the Prepare step's\n// paired item.\nlet prep = {};\ntry { prep = $('Prepare MIDI delivery').item.json || {}; } catch (e) { prep = {}; }\nconst drive = $json || {};\nconst midiLink = drive.webViewLink || prep.midiUrl || '';\nconst telegramText =\n  `\ud83c\udfb5 MIDI ready: ${prep.title || prep.sourceFile || 'your audio'}\\n` +\n  `Source: ${prep.sourceFile || ''}\\n` +\n  `${prep.noteCount} notes \u00b7 key of ${prep.musicalKey} \u00b7 ${prep.tempoBpm} BPM\\n` +\n  `MIDI: ${midiLink}`;\nreturn { json: {\n  sourceFile: prep.sourceFile || '',\n  convertedAt: prep.convertedAt || new Date().toISOString(),\n  noteCount: prep.noteCount ?? '',\n  musicalKey: prep.musicalKey ?? '',\n  tempoBpm: prep.tempoBpm ?? '',\n  midiLink,\n  telegramText,\n} };"
+   },
+   "name": "Build log row + Telegram message",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2700,
+    340
+   ],
+   "id": "n11"
+  },
+  {
+   "parameters": {
+    "resource": "sheet",
+    "operation": "append",
+    "documentId": {
+     "__rl": true,
+     "mode": "url",
+     "value": ""
+    },
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": "gid=0",
+     "cachedResultName": "Conversions"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": null,
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "sourceFile",
+       "displayName": "sourceFile",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "convertedAt",
+       "displayName": "convertedAt",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "noteCount",
+       "displayName": "noteCount",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "musicalKey",
+       "displayName": "musicalKey",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "tempoBpm",
+       "displayName": "tempoBpm",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "midiLink",
+       "displayName": "midiLink",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false
+      }
+     ]
+    },
+    "options": {}
+   },
+   "name": "Log conversion to Sheet",
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.2,
+   "position": [
+    2980,
+    340
+   ],
+   "id": "n12"
+  },
+  {
+   "parameters": {
+    "chatId": "",
+    "text": "={{ $json.telegramText }}",
+    "additionalFields": {}
+   },
+   "name": "Send MIDI ready message to Telegram",
+   "type": "n8n-nodes-base.telegram",
+   "typeVersion": 1.2,
+   "position": [
+    3260,
+    340
+   ],
+   "id": "n13"
+  }
+ ],
+ "connections": {
+  "Watch Drive folder for new audio": {
+   "main": [
+    [
+     {
+      "node": "Is it an audio file?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Is it an audio file?": {
+   "main": [
+    [
+     {
+      "node": "Convert files one by one",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    []
+   ]
+  },
+  "Convert files one by one": {
+   "main": [
+    [],
+    [
+     {
+      "node": "Share audio file in Drive",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Share audio file in Drive": {
+   "main": [
+    [
+     {
+      "node": "Build Apify audio URL",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build Apify audio URL": {
+   "main": [
+    [
+     {
+      "node": "Convert audio to MIDI on Apify",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Convert audio to MIDI on Apify": {
+   "main": [
+    [
+     {
+      "node": "Prepare MIDI delivery",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare MIDI delivery": {
+   "main": [
+    [
+     {
+      "node": "Did the conversion succeed?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Did the conversion succeed?": {
+   "main": [
+    [
+     {
+      "node": "Download the MIDI file",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Convert files one by one",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Download the MIDI file": {
+   "main": [
+    [
+     {
+      "node": "Save MIDI to Drive folder",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save MIDI to Drive folder": {
+   "main": [
+    [
+     {
+      "node": "Build log row + Telegram message",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build log row + Telegram message": {
+   "main": [
+    [
+     {
+      "node": "Log conversion to Sheet",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Log conversion to Sheet": {
+   "main": [
+    [
+     {
+      "node": "Send MIDI ready message to Telegram",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Send MIDI ready message to Telegram": {
+   "main": [
+    [
+     {
+      "node": "Convert files one by one",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "active": false,
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "pinData": {}
+}
